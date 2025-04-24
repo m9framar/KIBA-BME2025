@@ -4,7 +4,6 @@ transformers
 datasets
 pandas
 scikit-learn
-rdkit-pypi
 kagglehub
 numpy
 tqdm # Added for progress bars
