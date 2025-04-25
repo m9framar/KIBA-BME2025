@@ -70,7 +70,7 @@ This document logs the steps and issues encountered while setting up and running
 
 9.  **Eighth Slurm Job Submission (Mixed Paths: Input from /project, Output to /home):**
     *   **Issue:** Job failed again during `singularity build`.
-    *   **Error Log:** `FATAL: Unable to build from /project/nr_haml2025/KIBA-BME2025/KIBA.def: ... permission denied`.
+    *   **Error Log:** `FATAL: Unable to build from /project/nr_hafm/nr_haml2025/KIBA-BME2025/KIBA.def: ... permission denied`.
     *   **Diagnosis:** Confirmed compute node cannot read from `/project/...` path either. Also tested manual build on login node (`singularity build --fakeroot /home/.../KIBA.sif /home/.../KIBA.def`) which also failed with `FATAL: Unable to build from /home/.../KIBA.def: ... permission denied`.
     *   **Action:** Checked directory permissions (`ls -ld`) and added `chmod o+x /home/nr_hafm/`.
     *   **Result:** Manual build still failed with the same permission denied error reading `/home/.../KIBA.def`.
@@ -97,3 +97,13 @@ This document logs the steps and issues encountered while setting up and running
 11. **Ninth Slurm Job Submission (Using Image from /home/nr_hafm):**
     *   **Status:** Ready to submit (as of 2025-04-25).
     *   **Expectation:** Job should now run successfully, using the pre-built image.
+
+12. **Tenth Slurm Job Submission (After Rebuilding Image with Updated kagglehub):**
+    *   **Issue:** Job failed during Python execution inside the container.
+    *   **Error Log:** `kagglehub.exceptions.KaggleApiHTTPError: 404 Client Error. Dataset not found` for `blk1804/kiba-drug-binding-dataset`.
+    *   **Diagnosis:** The script was hardcoded to download the dataset via `kagglehub`, which failed because the dataset ID was incorrect/missing. It wasn't designed to load the manually placed `KIBA.csv`.
+    *   **Resolution:** Modified `src/main.py`'s `load_kiba_data` function to directly load `/data/KIBA.csv` using `pandas.read_csv`, removing the `kagglehub` dependency for this step. Instructed user to manually rebuild the image with the updated script.
+
+13. **Eleventh Slurm Job Submission (After Rebuilding Image with pd.read_csv):**
+    *   **Status:** Ready to submit after manual rebuild (as of 2025-04-25).
+    *   **Expectation:** Job should successfully load data from the mounted `/data/KIBA.csv` file.
