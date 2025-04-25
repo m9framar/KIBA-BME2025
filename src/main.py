@@ -138,8 +138,8 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
     total_loss = 0.0
     num_batches = len(dataloader)
 
-    # Use tqdm for progress bar
-    progress_bar = tqdm(dataloader, desc="Training", leave=False)
+    # Use tqdm for progress bar, update less frequently in logs
+    progress_bar = tqdm(dataloader, desc="Training", leave=False, mininterval=10.0) # Update every 10s
 
     for batch_idx, (features, targets) in enumerate(progress_bar):
         features, targets = features.to(device), targets.to(device).unsqueeze(1) # Ensure target is [batch_size, 1]
@@ -179,21 +179,33 @@ def evaluate(model, dataloader, criterion, device):
     all_targets = []
     num_batches = len(dataloader)
 
-    # Use tqdm for progress bar
-    progress_bar = tqdm(dataloader, desc="Evaluating", leave=False)
+    # Use tqdm for progress bar, update less frequently in logs
+    progress_bar = tqdm(dataloader, desc="Evaluating", leave=False, mininterval=10.0) # Update every 10s
 
     with torch.no_grad(): # Disable gradient calculations
         for features, targets in progress_bar:
-            features, targets = features.to(device), targets.to(device).unsqueeze(1)
+            features, targets = features.to(device), targets.to(device) # Keep targets shape [batch_size]
+            targets_for_loss = targets.unsqueeze(1) # Ensure target for loss is [batch_size, 1]
 
             # Forward pass
             outputs = model(features)
 
             # Calculate loss
-            loss = criterion(outputs, targets)
+            loss = criterion(outputs, targets_for_loss)
             total_loss += loss.item()
 
-            # Store predictions and targets for
+            # Store predictions and targets for metrics calculation
+            # Ensure outputs are detached and moved to CPU before converting to numpy
+            all_preds.append(outputs.detach().cpu().numpy())
+            all_targets.append(targets.detach().cpu().numpy())
+
+    # Check if any predictions were made
+    if not all_preds:
+        logging.warning("Evaluation dataloader was empty or no predictions were generated.")
+        # Return default/NaN values for metrics
+        return 0.0, float('nan'), float('nan'), float('nan'), np.array([]), np.array([])
+
+    # Concatenate all batch results
     avg_loss = total_loss / num_batches
     all_preds = np.concatenate(all_preds, axis=0).flatten()
     all_targets = np.concatenate(all_targets, axis=0).flatten()
@@ -202,7 +214,12 @@ def evaluate(model, dataloader, criterion, device):
     mse = mean_squared_error(all_targets, all_preds)
     rmse = np.sqrt(mse)
     r2 = r2_score(all_targets, all_preds)
-    ci = concordance_index(all_targets, all_preds)
+    # Handle potential case where all targets or preds are constant for CI
+    try:
+        ci = concordance_index(all_targets, all_preds)
+    except ZeroDivisionError:
+        logging.warning("Could not calculate Concordance Index (likely due to constant targets/predictions).")
+        ci = float('nan')
 
     logging.info(f"Evaluation Finished. Avg Loss: {avg_loss:.4f}, RMSE: {rmse:.4f}, R2: {r2:.4f}, CI: {ci:.4f}")
     return avg_loss, rmse, r2, ci, all_targets, all_preds # Return targets and preds for plotting

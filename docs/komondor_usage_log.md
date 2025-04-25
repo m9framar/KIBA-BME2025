@@ -107,3 +107,19 @@ This document logs the steps and issues encountered while setting up and running
 13. **Eleventh Slurm Job Submission (After Rebuilding Image with pd.read_csv):**
     *   **Status:** Ready to submit after manual rebuild (as of 2025-04-25).
     *   **Expectation:** Job should successfully load data from the mounted `/data/KIBA.csv` file.
+
+14. **Twelfth Slurm Job Submission (After Rebuilding Image with Column Renaming):**
+    *   **Issue 1:** Job failed during evaluation phase.
+    *   **Error Log 1:** `ValueError: need at least one array to concatenate` in `evaluate` function.
+    *   **Diagnosis 1:** The lists `all_preds` and `all_targets` were not being populated inside the evaluation loop.
+    *   **Issue 2:** `tqdm` progress bar updates were spamming the Slurm log file.
+    *   **Diagnosis 2:** `tqdm` default behavior prints a new line for each update in non-TTY environments.
+    *   **Resolution:** Modified `src/main.py`:
+        1. Added missing `all_preds.append()` and `all_targets.append()` in the `evaluate` loop.
+        2. Added a check for empty lists before concatenation in `evaluate`.
+        3. Added `mininterval=10.0` to `tqdm` calls in `train_epoch` and `evaluate` to reduce update frequency.
+    *   Instructed user to manually rebuild the image with the updated script.
+
+15. **Thirteenth Slurm Job Submission (After Fixing Evaluation & tqdm):**
+    *   **Status:** Ready to submit after manual rebuild (as of 2025-04-26).
+    *   **Expectation:** Job should complete evaluation without error and produce less verbose logs.
