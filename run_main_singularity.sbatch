@@ -19,8 +19,8 @@ module purge
 module load singularity # Load the Singularity module
 
 # --- Define Paths (Using Canonical Paths) ---
-# Location of the pre-built Singularity image
-IMAGE_PATH="/project/nr_haml2025/KIBA-BME2025/KIBA.sif"
+# Location of the pre-built Singularity image (Now in base home dir)
+IMAGE_PATH="/home/nr_hafm/KIBA.sif"
 
 # Data, Results, and Cache directories on the HOST filesystem
 HOST_DATA_DIR="/project/nr_haml2025/KIBA-BME2025/data"       # Persistent data

@@ -83,5 +83,17 @@ This document logs the steps and issues encountered while setting up and running
         *   Build fails reading from `/home/...` when paths are set explicitly.
         *   Standard `touch` command confirms user write access to `/project/...`.
         *   `chmod o+x /home/nr_hafm/` did not resolve read errors from home.
-    *   **Diagnosis:** Issue likely stems from system-level configuration (SELinux, mount options, user namespaces, ACLs) preventing the Singularity build process (`--fakeroot`) from correctly accessing user filesystems (`/home`, `/project`, `/scratch`).
-    *   **Next Step:** Contact Komondor HPC support (hpc-support@bme.hu) with details (commands, errors, `ls -l` output) for investigation into the incompatibility between `--fakeroot` and the filesystem configurations.
+    *   **Dummy File Test:**
+        *   `dummy.def` created for minimal testing.
+        *   Build output to `/home/...`: Failed at the *end* (write error).
+        *   Build output to `/project/...`: Failed at the *start* (read error from `/home/...`).
+        *   Build output to `/scratch/...`: Failed at the *start* (read error from `/home/...`).
+    *   **Successful Build Location Found:**
+        *   Manual build of `dummy.sif` succeeded *only* when run from and outputting to `/home/nr_hafm`.
+        *   Manual build of `KIBA.sif` succeeded *only* after copying source files (`KIBA.def`, `src/`, `requirements.txt`) to `/home/nr_hafm` and running the build there, outputting `/home/nr_hafm/KIBA.sif`.
+    *   **Diagnosis:** `singularity build --fakeroot` on login node cannot access subdirectories (`/home/nr_hafm/nr_haml2025/...`, `/project/...`, `/scratch/...`) for reading inputs or writing outputs, but *can* operate within the base `/home/nr_hafm` directory.
+    *   **Resolution:** Build image manually in `/home/nr_hafm`. Update Slurm script to use `/home/nr_hafm/KIBA.sif` while still mounting data/results/cache from `/project` and `/scratch`.
+
+11. **Ninth Slurm Job Submission (Using Image from /home/nr_hafm):**
+    *   **Status:** Ready to submit (as of 2025-04-25).
+    *   **Expectation:** Job should now run successfully, using the pre-built image.
