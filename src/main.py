@@ -2,7 +2,6 @@ import argparse
 import os
 import pandas as pd
 import torch
-import kagglehub
 import numpy as np
 from transformers import AutoTokenizer, AutoModel
 from torch.utils.data import Dataset, DataLoader
@@ -28,20 +27,24 @@ DEFAULT_LR = 1e-4
 DEFAULT_OUTPUT_DIR = "results"
 
 # --- Data Loading ---
-def load_kiba_data():
-    """Downloads and loads the KIBA dataset."""
-    logging.info("Downloading KIBA dataset...")
-    path = kagglehub.dataset_download("blk1804/kiba-drug-binding-dataset", path="data", force_download=False)
-    csv_path = os.path.join(path, "KIBA.csv")
-    logging.info(f"Loading data from {csv_path}")
-    df = pd.read_csv(csv_path)
-    df.rename(columns={'Ki , Kd and IC50  (KIBA Score)': 'interaction'}, inplace=True)
-    df.rename(columns={'compound_iso_smiles': 'smiles'}, inplace=True)
-    logging.info(f"Loaded {len(df)} interactions.")
-    # Basic preprocessing: drop rows with missing values if any
-    df.dropna(subset=['smiles', 'target_sequence', 'interaction'], inplace=True)
-    logging.info(f"Data shape after dropping NA: {df.shape}")
-    return df
+def load_kiba_data(data_dir="/data") -> pd.DataFrame:
+    """Loads the KIBA dataset directly from the mounted CSV file."""
+    logging.info("Loading KIBA dataset from local CSV...")
+    # Define the expected path within the container
+    csv_path = os.path.join(data_dir, "KIBA.csv") 
+    
+    if not os.path.exists(csv_path):
+        logging.error(f"KIBA dataset not found at expected path: {csv_path}")
+        raise FileNotFoundError(f"KIBA dataset not found at expected path: {csv_path}")
+
+    try:
+        # Directly load the CSV using pandas
+        df = pd.read_csv(csv_path)
+        logging.info(f"Successfully loaded KIBA data from {csv_path}. Shape: {df.shape}")
+        return df
+    except Exception as e:
+        logging.error(f"Error loading KIBA data from {csv_path}: {e}")
+        raise
 
 # --- Embedding Generation ---
 def generate_embeddings(sequences, model_name, tokenizer, model, device, batch_size, desc="Sequences"):
@@ -187,10 +190,7 @@ def evaluate(model, dataloader, criterion, device):
             loss = criterion(outputs, targets)
             total_loss += loss.item()
 
-            # Store predictions and targets for metric calculation
-            all_preds.append(outputs.cpu().numpy())
-            all_targets.append(targets.cpu().numpy())
-
+            # Store predictions and targets for
     avg_loss = total_loss / num_batches
     all_preds = np.concatenate(all_preds, axis=0).flatten()
     all_targets = np.concatenate(all_targets, axis=0).flatten()
