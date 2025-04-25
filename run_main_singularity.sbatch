@@ -60,10 +60,10 @@ echo "Node GPU Info:"
 nvidia-smi || echo "nvidia-smi command failed or no GPU detected by Slurm."
 
 singularity exec \
-    --nv \# Enable Nvidia GPU support inside the container
-    --bind "$HOST_DATA_DIR:$CONTAINER_DATA_DIR:ro" \# Mount host data dir (read-only)
-    --bind "$HOST_RESULTS_DIR:$CONTAINER_RESULTS_DIR" \# Mount host results dir (writable)
-    --bind "$HOST_CACHE_DIR:$CONTAINER_CACHE_DIR" \# Mount host cache dir for Hugging Face models
+    --nv # Enable Nvidia GPU support inside the container
+    --bind "$HOST_DATA_DIR:$CONTAINER_DATA_DIR:ro" # Mount host data dir (read-only)
+    --bind "$HOST_RESULTS_DIR:$CONTAINER_RESULTS_DIR" # Mount host results dir (writable)
+    --bind "$HOST_CACHE_DIR:$CONTAINER_CACHE_DIR" # Mount host cache dir for Hugging Face models
     "$IMAGE_PATH" \
     python "$CONTAINER_APP_DIR/src/main.py" \
         --output_dir "$CONTAINER_RESULTS_DIR" \
