@@ -69,5 +69,13 @@ This document logs the steps and issues encountered while setting up and running
     *   **Resolution:** Modified `run_main_singularity.sbatch` to use `$SLURM_SUBMIT_DIR` for the input `DEFINITION_FILE` path (readable) and the explicit home directory path for the output `IMAGE_PATH` (writable).
 
 9.  **Eighth Slurm Job Submission (Mixed Paths: Input from /project, Output to /home):**
-    *   **Status:** Ready to submit (as of 2025-04-25).
-    *   **Expectation:** If the read/write permissions diagnosis is correct, this combination might allow the build to succeed.
+    *   **Issue:** Job failed again during `singularity build`.
+    *   **Error Log:** `FATAL: Unable to build from /project/nr_haml2025/KIBA-BME2025/KIBA.def: ... permission denied`.
+    *   **Diagnosis:** Confirmed compute node cannot read from `/project/...` path either. Also tested manual build on login node (`singularity build --fakeroot /home/.../KIBA.sif /home/.../KIBA.def`) which also failed with `FATAL: Unable to build from /home/.../KIBA.def: ... permission denied`.
+    *   **Action:** Checked directory permissions (`ls -ld`) and added `chmod o+x /home/nr_hafm/`.
+    *   **Result:** Manual build still failed with the same permission denied error reading `/home/.../KIBA.def`.
+
+10. **Impasse - Permission Denied Reading Definition File:**
+    *   **Status:** Unable to build Singularity image either via Slurm or manually on login node due to persistent "permission denied" errors when trying to read `KIBA.def` from the user's home directory, despite standard permissions appearing correct.
+    *   **Diagnosis:** Issue likely stems from system-level configuration (SELinux, mount options, user namespaces, ACLs) preventing the Singularity build process from accessing user home directory files.
+    *   **Next Step:** Contact Komondor HPC support (hpc-support@bme.hu) with details (commands, errors, `ls -l` output) for investigation.
