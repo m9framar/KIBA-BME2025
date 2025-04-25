@@ -1,0 +1,41 @@
+Bootstrap: docker
+From: pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+
+%post
+    # Install essential packages and cleanup apt cache
+    apt-get update && apt-get install -y --no-install-recommends \
+        build-essential \
+        git \
+        wget \
+        ca-certificates \
+        && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Upgrade pip and install Python packages from requirements.txt
+    pip install --upgrade pip
+    pip install --no-cache-dir -r /app/requirements.txt
+
+    # Make sure kaggle CLI is configured if needed within the container,
+    # or rely on pre-downloaded data mounted into the container.
+    # Consider adding kaggle package if direct download inside container is desired.
+    # pip install kaggle
+
+%files
+    ./requirements.txt /app/requirements.txt
+    ./src /app/src
+
+%environment
+    export PATH=/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH
+    export PYTHONPATH=/app:$PYTHONPATH
+    # Set environment variables for Hugging Face model caching if needed
+    # export HF_HOME=/path/outside/container/.cache/huggingface
+    # export TRANSFORMERS_CACHE=/path/outside/container/.cache/huggingface
+
+%runscript
+    echo "Running KIBA main script inside Singularity container..."
+    # Default command to run when the container is executed
+    # Assumes data is available at /data and results should go to /results
+    # These paths need to be mounted during 'singularity run' or 'singularity exec'
+    python /app/src/main.py \
+        --output_dir /results \
+        "$@" # Pass any additional arguments from the command line
+
