@@ -22,11 +22,11 @@ module load singularity # Load the Singularity module
 # --- Define Paths ---
 # It's best practice to use absolute paths or paths relative to $SLURM_SUBMIT_DIR
 # However, $SLURM_SUBMIT_DIR resolves differently on compute nodes (/project/...) causing permission issues.
-# Define PROJECT_DIR using the known, writable home path instead for image output.
+# Define PROJECT_DIR using the known, writable home path for image output.
 PROJECT_DIR="/home/nr_hafm/nr_haml2025/KIBA-BME2025" # <<< CONFIRMED home path
 IMAGE_NAME="KIBA.sif"
-# Define DEFINITION_FILE using the explicit home path as well
-DEFINITION_FILE="$PROJECT_DIR/KIBA.def"
+# Define DEFINITION_FILE using $SLURM_SUBMIT_DIR (seems readable from compute node)
+DEFINITION_FILE="$SLURM_SUBMIT_DIR/KIBA.def"
 IMAGE_PATH="$PROJECT_DIR/$IMAGE_NAME" # Image will be built in your writable home project dir
 
 # Data, Results, and Cache directories on the HOST filesystem
@@ -50,7 +50,8 @@ mkdir -p "$HOST_CACHE_DIR"
 # --- Build Singularity Image (if needed) ---
 if [ ! -f "$IMAGE_PATH" ]; then
     echo "Singularity image $IMAGE_NAME not found at $IMAGE_PATH. Building..."
-    # Use absolute paths for both output image and input definition file, add --fix-perms
+    # Use explicit home path for output image and $SLURM_SUBMIT_DIR path for input definition file
+    echo "Attempting build: Output=$IMAGE_PATH, Input=$DEFINITION_FILE"
     singularity build --fakeroot --fix-perms "$IMAGE_PATH" "$DEFINITION_FILE"
     if [ $? -ne 0 ]; then
         echo "Singularity image build failed! Exiting."

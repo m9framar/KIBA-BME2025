@@ -63,5 +63,11 @@ This document logs the steps and issues encountered while setting up and running
     *   **Resolution:** Added `--fix-perms` flag to the `singularity build` command, as seen in documentation examples, hoping it influences build environment permissions.
 
 8.  **Seventh Slurm Job Submission (with --fix-perms):**
+    *   **Issue:** Job failed again during `singularity build`.
+    *   **Error Log:** `FATAL: Unable to build from /home/nr_hafm/nr_haml2025/KIBA-BME2025/KIBA.def: ... permission denied`.
+    *   **Diagnosis:** Process running under Slurm/fakeroot on compute node cannot read the definition file from the user's home directory. Previous errors suggest it *can* read from `$SLURM_SUBMIT_DIR` (/project/...) but cannot write there, and cannot read from `/home/...`.
+    *   **Resolution:** Modified `run_main_singularity.sbatch` to use `$SLURM_SUBMIT_DIR` for the input `DEFINITION_FILE` path (readable) and the explicit home directory path for the output `IMAGE_PATH` (writable).
+
+9.  **Eighth Slurm Job Submission (Mixed Paths: Input from /project, Output to /home):**
     *   **Status:** Ready to submit (as of 2025-04-25).
-    *   **Expectation:** Uncertain. If `--fix-perms` resolves the access issue, build may succeed. If not, filesystem access from compute nodes needs further investigation.
+    *   **Expectation:** If the read/write permissions diagnosis is correct, this combination might allow the build to succeed.
