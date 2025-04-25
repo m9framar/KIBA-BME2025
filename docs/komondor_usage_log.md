@@ -75,7 +75,13 @@ This document logs the steps and issues encountered while setting up and running
     *   **Action:** Checked directory permissions (`ls -ld`) and added `chmod o+x /home/nr_hafm/`.
     *   **Result:** Manual build still failed with the same permission denied error reading `/home/.../KIBA.def`.
 
-10. **Impasse - Permission Denied Reading Definition File:**
-    *   **Status:** Unable to build Singularity image either via Slurm or manually on login node due to persistent "permission denied" errors when trying to read `KIBA.def` from the user's home directory, despite standard permissions appearing correct.
-    *   **Diagnosis:** Issue likely stems from system-level configuration (SELinux, mount options, user namespaces, ACLs) preventing the Singularity build process from accessing user home directory files.
-    *   **Next Step:** Contact Komondor HPC support (hpc-support@bme.hu) with details (commands, errors, `ls -l` output) for investigation.
+10. **Impasse - Permission Denied Reading/Writing During Build:**
+    *   **Status:** Unable to build Singularity image either via Slurm or manually on login node due to persistent "permission denied" errors.
+    *   **Details:**
+        *   Build fails writing to `/project/...` even when run manually.
+        *   Build fails writing to `/scratch/...` even when run manually.
+        *   Build fails reading from `/home/...` when paths are set explicitly.
+        *   Standard `touch` command confirms user write access to `/project/...`.
+        *   `chmod o+x /home/nr_hafm/` did not resolve read errors from home.
+    *   **Diagnosis:** Issue likely stems from system-level configuration (SELinux, mount options, user namespaces, ACLs) preventing the Singularity build process (`--fakeroot`) from correctly accessing user filesystems (`/home`, `/project`, `/scratch`).
+    *   **Next Step:** Contact Komondor HPC support (hpc-support@bme.hu) with details (commands, errors, `ls -l` output) for investigation into the incompatibility between `--fakeroot` and the filesystem configurations.
