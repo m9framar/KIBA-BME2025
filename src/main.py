@@ -40,6 +40,9 @@ def load_kiba_data(data_dir="/data") -> pd.DataFrame:
     try:
         # Directly load the CSV using pandas
         df = pd.read_csv(csv_path)
+        # Ensure the necessary columns are present
+        df.rename(columns={'Ki , Kd and IC50  (KIBA Score)': 'interaction'}, inplace=True)
+        df.rename(columns={'compound_iso_smiles': 'smiles'}, inplace=True)
         logging.info(f"Successfully loaded KIBA data from {csv_path}. Shape: {df.shape}")
         return df
     except Exception as e:
