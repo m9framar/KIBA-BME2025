@@ -1,39 +1,32 @@
 #!/bin/bash
 #SBATCH --job-name=kiba_main_gpu   # Job name
-#SBATCH --output=kiba_main_gpu.%j.out # Standard output file (%j expands to jobID)
-#SBATCH --error=kiba_main_gpu.%j.err  # Standard error file (%j expands to jobID)
+#SBATCH --output=/project/nr_haml2025/KIBA-BME2025/slurm_logs/kiba_main_gpu.%j.out # Log to project space
+#SBATCH --error=/project/nr_haml2025/KIBA-BME2025/slurm_logs/kiba_main_gpu.%j.err  # Log to project space
 #SBATCH --time=08:00:00             # Wall clock time limit (hh:mm:ss)
 #SBATCH --nodes=1                   # Number of nodes
 #SBATCH --ntasks-per-node=1         # Number of tasks (processes) per node
-#SBATCH --cpus-per-task=8           # Increase CPU cores to get more memory (8 * 4G = 32G)
-#SBATCH --mem-per-cpu=4000M         # Keep memory per CPU at max for GPU partition
+#SBATCH --cpus-per-task=8           # CPU cores for your task (adjust if needed)
+#SBATCH --mem-per-cpu=4000M         # Memory per CPU core (adjust if needed)
 #SBATCH --partition=gpu             # Specify the GPU partition
 #SBATCH --gres=gpu:1                # Request 1 GPU
 
 # --- Job Setup ---
 echo "Job started on $(hostname) at $(date)"
 echo "Job ID: $SLURM_JOB_ID"
-echo "Submitted from: $SLURM_SUBMIT_DIR"
 
 # Load necessary modules
 module purge
 module load singularity # Load the Singularity module
 
-# --- Define Paths ---
-# It's best practice to use absolute paths or paths relative to $SLURM_SUBMIT_DIR
-# However, $SLURM_SUBMIT_DIR resolves differently on compute nodes (/project/...) causing permission issues.
-# Define PROJECT_DIR using the known, writable home path for image output.
-PROJECT_DIR="/home/nr_hafm/nr_haml2025/KIBA-BME2025" # <<< CONFIRMED home path
-IMAGE_NAME="KIBA.sif"
-# Define DEFINITION_FILE using $SLURM_SUBMIT_DIR (seems readable from compute node)
-DEFINITION_FILE="$SLURM_SUBMIT_DIR/KIBA.def"
-IMAGE_PATH="$PROJECT_DIR/$IMAGE_NAME" # Image will be built in your writable home project dir
+# --- Define Paths (Using Canonical Paths) ---
+# Location of the pre-built Singularity image
+IMAGE_PATH="/project/nr_haml2025/KIBA-BME2025/KIBA.sif"
 
 # Data, Results, and Cache directories on the HOST filesystem
-# Use $SLURM_SUBMIT_DIR for finding input data/results relative to submission location
-HOST_DATA_DIR="$SLURM_SUBMIT_DIR/data"
-HOST_RESULTS_DIR="$SLURM_SUBMIT_DIR/results"
-HOST_CACHE_DIR="$HOME/.cache/huggingface" # Standard Hugging Face cache location
+HOST_DATA_DIR="/project/nr_haml2025/KIBA-BME2025/data"       # Persistent data
+HOST_RESULTS_DIR="/project/nr_haml2025/KIBA-BME2025/results"   # Persistent results
+HOST_CACHE_DIR="/scratch/nr_haml2025/cache/huggingface" # Cache in scratch for speed
+HOST_LOG_DIR="/project/nr_haml2025/KIBA-BME2025/slurm_logs" # Slurm logs
 
 # Corresponding paths INSIDE the container
 CONTAINER_APP_DIR="/app"
@@ -46,21 +39,18 @@ echo "Creating host directories (if they don't exist)..."
 mkdir -p "$HOST_DATA_DIR"
 mkdir -p "$HOST_RESULTS_DIR"
 mkdir -p "$HOST_CACHE_DIR"
+mkdir -p "$HOST_LOG_DIR"
 
-# --- Build Singularity Image (if needed) ---
+# --- Build Singularity Image (REMOVED) ---
+# Build step is now done manually on the login node.
+# Ensure the image exists at $IMAGE_PATH before submitting the job.
+echo "Checking for existing Singularity image: $IMAGE_PATH"
 if [ ! -f "$IMAGE_PATH" ]; then
-    echo "Singularity image $IMAGE_NAME not found at $IMAGE_PATH. Building..."
-    # Use explicit home path for output image and $SLURM_SUBMIT_DIR path for input definition file
-    echo "Attempting build: Output=$IMAGE_PATH, Input=$DEFINITION_FILE"
-    singularity build --fakeroot --fix-perms "$IMAGE_PATH" "$DEFINITION_FILE"
-    if [ $? -ne 0 ]; then
-        echo "Singularity image build failed! Exiting."
-        exit 1
-    fi
-    echo "Singularity image built successfully: $IMAGE_PATH"
-else
-    echo "Using existing Singularity image: $IMAGE_PATH"
+    echo "ERROR: Singularity image not found at $IMAGE_PATH!"
+    echo "Please build the image manually on the login node first."
+    exit 1
 fi
+echo "Using existing Singularity image."
 
 # --- Execute Script inside Container ---
 echo "Running main.py inside Singularity container..."
