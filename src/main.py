@@ -31,7 +31,7 @@ DEFAULT_OUTPUT_DIR = "results"
 def load_kiba_data():
     """Downloads and loads the KIBA dataset."""
     logging.info("Downloading KIBA dataset...")
-    path = kagglehub.api.dataset_download("blk1804/kiba-drug-binding-dataset", path="data", force_download=False)
+    path = kagglehub.dataset_download("blk1804/kiba-drug-binding-dataset", path="data", force_download=False)
     csv_path = os.path.join(path, "KIBA.csv")
     logging.info(f"Loading data from {csv_path}")
     df = pd.read_csv(csv_path)
