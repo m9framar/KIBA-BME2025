@@ -14,6 +14,7 @@ import torch.optim as optim
 from tqdm import tqdm # For progress bars
 from lifelines.utils import concordance_index
 import matplotlib.pyplot as plt
+import sys # Import sys to check for TTY
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -138,10 +139,10 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
     total_loss = 0.0
     num_batches = len(dataloader)
 
-    # Use tqdm for progress bar, update less frequently in logs
-    progress_bar = tqdm(dataloader, desc="Training", leave=False, mininterval=10.0) # Update every 10s
+    # Only use tqdm if running in an interactive terminal (TTY)
+    iterable = tqdm(dataloader, desc="Training", leave=False, mininterval=10.0) if sys.stdout.isatty() else dataloader
 
-    for batch_idx, (features, targets) in enumerate(progress_bar):
+    for batch_idx, (features, targets) in enumerate(iterable):
         features, targets = features.to(device), targets.to(device).unsqueeze(1) # Ensure target is [batch_size, 1]
 
         # Zero gradients
@@ -159,12 +160,15 @@ def train_epoch(model, dataloader, criterion, optimizer, device):
 
         total_loss += loss.item()
 
-        # Update progress bar description
-        progress_bar.set_postfix({'batch_loss': f'{loss.item():.4f}'})
+        # Update progress bar description if tqdm is active
+        if isinstance(iterable, tqdm):
+            iterable.set_postfix({'batch_loss': f'{loss.item():.4f}'})
 
-        # Log batch loss occasionally
-        if batch_idx % (num_batches // 10) == 0: # Log approx 10 times per epoch
-            logging.debug(f"  Batch {batch_idx}/{num_batches}, Loss: {loss.item():.4f}")
+        # Log batch loss occasionally (useful when tqdm is disabled)
+        # Log approx 10 times per epoch, or at least every 100 batches if epoch is large
+        log_interval = max(1, num_batches // 10) if num_batches > 10 else 1
+        if batch_idx % log_interval == 0 or batch_idx == num_batches - 1:
+            logging.info(f"  Epoch Progress: Batch {batch_idx+1}/{num_batches}, Current Batch Loss: {loss.item():.4f}")
 
     avg_loss = total_loss / num_batches
     logging.info(f"Training Epoch Finished. Average Loss: {avg_loss:.4f}")
@@ -179,11 +183,11 @@ def evaluate(model, dataloader, criterion, device):
     all_targets = []
     num_batches = len(dataloader)
 
-    # Use tqdm for progress bar, update less frequently in logs
-    progress_bar = tqdm(dataloader, desc="Evaluating", leave=False, mininterval=10.0) # Update every 10s
+    # Only use tqdm if running in an interactive terminal (TTY)
+    iterable = tqdm(dataloader, desc="Evaluating", leave=False, mininterval=10.0) if sys.stdout.isatty() else dataloader
 
     with torch.no_grad(): # Disable gradient calculations
-        for features, targets in progress_bar:
+        for features, targets in iterable:
             features, targets = features.to(device), targets.to(device) # Keep targets shape [batch_size]
             targets_for_loss = targets.unsqueeze(1) # Ensure target for loss is [batch_size, 1]
 

@@ -121,5 +121,11 @@ This document logs the steps and issues encountered while setting up and running
     *   Instructed user to manually rebuild the image with the updated script.
 
 15. **Thirteenth Slurm Job Submission (After Fixing Evaluation & tqdm):**
+    *   **Issue:** `tqdm` progress bar updates were still spamming the Slurm log file during training, despite `mininterval`.
+    *   **Diagnosis:** `mininterval` might not be sufficient, or `set_postfix` calls might override it in non-TTY environments.
+    *   **Resolution:** Modified `src/main.py`'s `train_epoch` and `evaluate` functions to only enable `tqdm` if `sys.stdout.isatty()` is true. Added more consistent manual logging within `train_epoch` for non-TTY cases.
+    *   Instructed user to manually rebuild the image with the updated script.
+
+16. **Fourteenth Slurm Job Submission (After Disabling tqdm in non-TTY):**
     *   **Status:** Ready to submit after manual rebuild (as of 2025-04-26).
-    *   **Expectation:** Job should complete evaluation without error and produce less verbose logs.
+    *   **Expectation:** Slurm logs should now only contain the manual progress updates (approx. 10 per epoch) and not be spammed by `tqdm`.
