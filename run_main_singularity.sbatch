@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1                      # Run a single task
 #SBATCH --cpus-per-task=8               # Number of CPU cores per task (increased for build)
 #SBATCH --mem-per-cpu=4000M             # Memory per CPU core (increased for build)
-#SBATCH --time=02:00:00                 # Time limit hrs:min:sec
+#SBATCH --time=01:00:00                 # Time limit hrs:min:sec
 #SBATCH --output=kiba_mlp_%j.log        # Standard output and error log (%j expands to job ID)
 
 echo "Date: $(date)"
@@ -53,7 +53,7 @@ module load singularity
 
 # --- Create Host Directories if they don't exist ---
 # Important: Run this on the login node *before* submitting, or ensure Slurm has write access
-# mkdir -p "$HOST_DATA_DIR" # Data should already exist
+mkdir -p "$HOST_DATA_DIR" # Data should already exist
 mkdir -p "$HOST_RESULTS_DIR"
 mkdir -p "$HOST_CACHE_DIR"
 echo "Ensured host directories exist (or will be created by user):"
