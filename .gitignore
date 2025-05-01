@@ -1,5 +1,6 @@
 *.sif
 slurm_logs/
+.gradio
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
